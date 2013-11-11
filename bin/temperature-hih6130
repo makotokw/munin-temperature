@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'i2c'
+require 'munin'
+
+class HIH6130
+
+def initialize(path, address = 0x27)
+@device = I2C.create(path)
+@address = address
+end
+
+def fetch_humidity_temperature
+s = @device.read(@address, 0x04)
+hum_h, hum_l, temp_h, temp_l = s.bytes.to_a
+
+status = (hum_h >> 6) & 0x03
+hum_h = hum_h & 0x3f
+hum = (hum_h << 8) | hum_l
+temp = ((temp_h << 8) | temp_l) / 4
+
+return status, hum * 6.10e-3, temp * 1.007e-2 - 40.0
+end
+
+end
+
+class FetchTemperatureHumidity < Munin::Plugin
+
+graph_attributes 'Temperature / Humidity',
+:args => '--base 1000 -l 0 -u 100',
+:category => 'Room',
+:vlabel => 'Temp(C) / Humid(%)',
+:info => 'This graph shows temperature and humidity by HIH6130 Sensor'
+
+declare_field :temperature,
+:label => 'temperature',
+:warning => '30',
+:critical => '40'
+
+declare_field :humidity,
+:label => 'humidity',
+:warning => '60:',
+:critical => '50:'
+
+def retrieve_values
+sensor = HIH6130.new('/dev/i2c-1')
+dummy = sensor.fetch_humidity_temperature
+status, h, t = sensor.fetch_humidity_temperature
+{ :temperature => t.round(1), :humidity => h.round(1) }
+end
+
+end
+
+FetchTemperatureHumidity.new.run
