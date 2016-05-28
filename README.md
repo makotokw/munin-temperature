@@ -7,15 +7,14 @@ Temperature Munin Plugin
 
 * Raspberry Pi (Raspbian)
 * HIH-6130 Sensor
-* Ruby 1.9.3
+* Ruby 1.9.3+
 
 ## Install Plugin
 
 ```
 git clone https://github.com/makotokw/munin-temperature.git
 cd munin-temperature
-sudo gem i bundler
-bundle install
+sudo gem i i2c munin rake
 sudo rake install
 ```
 
